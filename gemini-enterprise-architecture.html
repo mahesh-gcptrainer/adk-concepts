@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gemini Enterprise — Agent Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --ink: #0B0E13;
+    --ink-muted: #5B6271;
+    --ink-faint: #9098A6;
+    --rule: #E5E7EB;
+    --rule-strong: #D1D5DB;
+
+    --enterprise: #1E3A8A;
+    --enterprise-tint: #EFF4FB;
+    --enterprise-border: #C6D2E8;
+
+    --agent: #991B1B;
+    --agent-tint: #FDF4F4;
+    --agent-border: #E8C6C6;
+
+    --deploy: #047857;
+    --deploy-tint: #F0F8F4;
+    --deploy-border: #C2DDD0;
+
+    --agentic: #C2410C;
+    --agentic-tint: #FDF5EE;
+
+    --component-bg: #F6F6F4;
+    --component-border: #E5E5E0;
+
+    --arrow: #1F2937;
+    --arrow-orchestrated: #6B7280;
+    --arrow-agentic: #C2410C;
+
+    --shadow-sm: 0 1px 2px rgba(11, 14, 19, 0.04);
+    --shadow-md: 0 4px 12px rgba(11, 14, 19, 0.06);
+    --shadow-lg: 0 12px 32px rgba(11, 14, 19, 0.10);
+
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Layout ---------- */
+
+  .page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 56px 32px 96px;
+  }
+
+  /* ---------- Header ---------- */
+
+  header.hero {
+    margin-bottom: 48px;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 32px;
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 16px;
+  }
+
+  h1 {
+    font-size: clamp(32px, 4.5vw, 48px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0 0 16px 0;
+    max-width: 900px;
+  }
+
+  h1 .accent {
+    color: var(--agentic);
+  }
+  
+  h3 .accent {
+    color: var(--agentic);
+  }  
+
+  .lede {
+    font-size: 18px;
+    color: var(--ink-muted);
+    max-width: 720px;
+    margin: 0;
+  }
+
+  /* ---------- Controls ---------- */
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .controls .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-right: 8px;
+    letter-spacing: 0.04em;
+  }
+
+  .mode-button {
+    appearance: none;
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mode-button:hover {
+    border-color: var(--ink-muted);
+    color: var(--ink);
+  }
+
+  .mode-button[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--surface);
+    border-color: var(--ink);
+  }
+
+  /* ---------- Diagram ---------- */
+
+  .diagram-wrap {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .diagram {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1200 / 920;
+    min-height: 600px;
+  }
+
+  /* Enterprise container */
+  .enterprise {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--enterprise-border);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, var(--enterprise-tint) 0%, transparent 60%);
+    padding: 20px;
+  }
+
+  .enterprise-label {
+    position: absolute;
+    top: -1px;
+    left: 24px;
+    transform: translateY(-50%);
+    background: var(--surface);
+    padding: 0 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--enterprise);
+    letter-spacing: 0.02em;
+  }
+
+  /* Queries row */
+  .queries {
+    position: absolute;
+    top: 32px;
+    left: 32px;
+    right: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .query {
+    appearance: none;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .query:hover {
+    border-color: var(--ink-muted);
+    background: var(--bg);
+  }
+
+  .query.active {
+    border-color: var(--agentic);
+    background: var(--agentic-tint);
+    box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.12);
+  }
+
+  .query .chevron {
+    color: var(--ink-faint);
+    font-weight: 600;
+  }
+
+  .query.active .chevron {
+    color: var(--agentic);
+  }
+
+  .query .target-tag {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--ink-faint);
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--component-bg);
+    border: 1px solid var(--component-border);
+  }
+
+  /* Agent positioning */
+  .agent-slot {
+    position: absolute;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .agent-slot.coordinator {
+    top: 28%;
+    left: 30%;
+    width: 40%;
+    height: 22%;
+  }
+
+  .agent-slot.agent-a {
+    top: 56%;
+    left: 4%;
+    width: 42%;
+    height: 38%;
+  }
+
+  .agent-slot.agent-b {
+    top: 56%;
+    left: 54%;
+    width: 42%;
+    height: 38%;
+  }
+
+  /* Deployment wrapper */
+  .deployment {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border: 1.5px solid var(--deploy-border);
+    border-radius: var(--radius-md);
+    background: var(--deploy-tint);
+    padding: 14px 12px 12px 12px;
+  }
+
+  .deployment-label {
+    position: absolute;
+    top: -1px;
+    right: 14px;
+    transform: translateY(-50%);
+    background: var(--surface);
+    padding: 0 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--deploy);
+    letter-spacing: 0.04em;
+  }
+
+  /* Agent box */
+  .agent {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border: 1.5px solid var(--agent-border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    padding: 22px 14px 14px 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .agent:hover {
+    border-color: var(--agent);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .agent.active {
+    border-color: var(--agent);
+    box-shadow: 0 0 0 3px rgba(153, 27, 27, 0.12);
+  }
+
+  .agent.highlight {
+    border-color: var(--agentic);
+    box-shadow: 0 0 0 4px rgba(194, 65, 12, 0.18);
+  }
+
+  .agent-name {
+    position: absolute;
+    top: -1px;
+    left: 14px;
+    transform: translateY(-50%);
+    background: var(--surface);
+    padding: 0 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--agent);
+    letter-spacing: 0.02em;
+  }
+
+  /* Components grid */
+  .components {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    height: 100%;
+    margin-top: 4px;
+  }
+
+  .agent-slot.coordinator .components {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 8px;
+  }
+
+  .component {
+    background: var(--component-bg);
+    border: 1px solid var(--component-border);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 36px;
+  }
+
+  .component:hover {
+    border-color: var(--ink-muted);
+    background: var(--surface);
+  }
+
+  .component.active {
+    border-color: var(--ink);
+    background: var(--surface);
+    box-shadow: 0 0 0 2px rgba(11, 14, 19, 0.08);
+  }
+
+  .component-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .component-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink);
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .component.loop .component-value {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--ink-muted);
+  }
+
+  /* SVG overlay for arrows */
+  .arrows-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 1;
+  }
+
+  .queries, .agent-slot {
+    z-index: 2;
+  }
+
+  .arrow-path {
+    fill: none;
+    stroke-width: 1.5;
+    transition: opacity 0.25s ease, stroke-width 0.2s ease;
+  }
+
+  .arrow-direct {
+    stroke: var(--arrow);
+  }
+
+  .arrow-orchestrated {
+    stroke: var(--arrow-orchestrated);
+    stroke-dasharray: 5 4;
+  }
+
+  .arrow-agentic {
+    stroke: var(--arrow-agentic);
+    stroke-width: 1.5;
+  }
+
+  .arrow-path.dimmed {
+    opacity: 0.15;
+  }
+
+  .arrow-path.active {
+    stroke-width: 2.5;
+  }
+
+  .arrow-path.animating {
+    stroke-dasharray: 8 6;
+    animation: dash 1s linear infinite;
+  }
+
+  @keyframes dash {
+    to { stroke-dashoffset: -28; }
+  }
+
+  .arrow-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    fill: var(--ink-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 500;
+    transition: opacity 0.25s ease;
+  }
+
+  .arrow-label.dimmed {
+    opacity: 0.2;
+  }
+
+  /* Agentic AI label inside diagram */
+  .agentic-banner {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1.5px solid var(--agentic);
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--agentic);
+    letter-spacing: 0.02em;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    z-index: 5;
+  }
+
+  .agentic-banner:hover {
+    background: var(--agentic-tint);
+    box-shadow: var(--shadow-md);
+  }
+
+  .agentic-banner.active {
+    background: var(--agentic-tint);
+    box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.18);
+  }
+
+  /* ---------- Detail panel ---------- */
+
+  .detail-panel {
+    margin-top: 24px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    min-height: 200px;
+    transition: border-color 0.2s ease;
+  }
+
+  .detail-panel.empty {
+    background: transparent;
+    border-style: dashed;
+    color: var(--ink-faint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 14px;
+    min-height: 120px;
+  }
+
+  .detail-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 6px;
+  }
+
+  .detail-title {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px 0;
+  }
+
+  .detail-subtitle {
+    font-size: 15px;
+    color: var(--ink-muted);
+    margin: 0 0 20px 0;
+  }
+
+  .detail-body {
+    font-size: 14.5px;
+    color: var(--ink);
+    line-height: 1.65;
+  }
+
+  .detail-body p {
+    margin: 0 0 14px 0;
+  }
+
+  .detail-body p:last-child {
+    margin-bottom: 0;
+  }
+
+  .detail-body code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: var(--component-bg);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--component-border);
+  }
+
+  .detail-meta {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  .detail-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .detail-meta-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .detail-meta-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  /* ---------- Legend ---------- */
+
+  .legend {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    padding-top: 32px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .legend-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    border: 1.5px solid;
+    margin-top: 2px;
+  }
+
+  .legend-swatch.enterprise {
+    background: var(--enterprise-tint);
+    border-color: var(--enterprise-border);
+  }
+  .legend-swatch.agent {
+    background: var(--surface);
+    border-color: var(--agent-border);
+  }
+  .legend-swatch.deployment {
+    background: var(--deploy-tint);
+    border-color: var(--deploy-border);
+  }
+  .legend-swatch.agentic {
+    background: var(--agentic-tint);
+    border-color: var(--agentic);
+  }
+
+  .legend-text strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+
+  .legend-text span {
+    font-size: 13px;
+    color: var(--ink-muted);
+    line-height: 1.4;
+  }
+
+  /* ---------- Footer ---------- */
+
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* ---------- Responsive ---------- */
+
+  @media (max-width: 900px) {
+    .page { padding: 32px 16px 64px; }
+    .diagram-wrap { padding: 16px; }
+    .diagram { aspect-ratio: auto; min-height: 0; }
+    .agent-slot { position: relative !important; width: 100% !important; height: auto !important; left: auto !important; top: auto !important; margin-bottom: 16px; }
+    .agent { min-height: 200px; padding-top: 28px; }
+    .agent-slot.coordinator .components { grid-template-columns: 1fr 1fr; }
+    .arrows-overlay { display: none; }
+    .agentic-banner { position: relative; transform: none; left: auto; bottom: auto; display: inline-block; margin-top: 8px; }
+    .queries { position: relative; top: auto; left: auto; right: auto; margin-bottom: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <div class="eyebrow">Reference / Architecture</div>
+    <h1>The anatomy of an <span class="accent">agentic AI</span> app in Gemini Enterprise.</h1>
+    <p class="lede">A click-through map of how LLMs become agents, how agents become orchestrated systems, and where the &ldquo;agentic AI&rdquo; label actually belongs. Try a query, open an agent, inspect a component.</p>
+	<h3>AI Agent is a <span class="accent">Noun</span> & Agentic is an <span class="accent">Adjective</span></h3>
+  </header>
+
+  <div class="controls">
+    <span class="label">Show paths:</span>
+    <button class="mode-button" data-mode="all" aria-pressed="true">All</button>
+    <button class="mode-button" data-mode="direct" aria-pressed="false">Direct only</button>
+    <button class="mode-button" data-mode="orchestrated" aria-pressed="false">Coordinator-routed</button>
+  </div>
+
+  <div class="diagram-wrap">
+    <div class="diagram" id="diagram">
+
+      <div class="enterprise">
+        <span class="enterprise-label">Gemini Enterprise App</span>
+
+        <!-- Queries -->
+        <div class="queries">
+          <button class="query" data-query="q1" data-target="agent-a">
+            <span class="chevron">&gt;</span>
+            <span>@AI-Agent-A: Research quantum computing history</span>
+            <span class="target-tag">direct &rarr; Agent-A</span>
+          </button>
+          <button class="query" data-query="q2" data-target="agent-b">
+            <span class="chevron">&gt;</span>
+            <span>@AI-Agent-B: Query Q1 Sales from BigQuery</span>
+            <span class="target-tag">direct &rarr; Agent-B</span>
+          </button>
+          <button class="query" data-query="q3" data-target="coordinator">
+            <span class="chevron">&gt;</span>
+            <span>Quantum computing sales compared with Q1 Sales (SF Salesforce + historical BQ)</span>
+            <span class="target-tag">compound &rarr; Coordinator</span>
+          </button>
+        </div>
+
+        <!-- Coordinator agent -->
+        <div class="agent-slot coordinator" id="slot-coordinator">
+          <div class="deployment">
+            <span class="deployment-label">Deployed on GKE</span>
+            <div class="agent" data-agent="coordinator" id="agent-coordinator">
+              <span class="agent-name">Coordinator / Root Agent</span>
+              <div class="components">
+                <div class="component" data-concept="llm-coord">
+                  <div class="component-label">LLM</div>
+                  <div class="component-value">Gemma 4</div>
+                </div>
+                <div class="component" data-concept="memory">
+                  <div class="component-label">Memory</div>
+                  <div class="component-value">Session + State</div>
+                </div>
+                <div class="component" data-concept="tools-coord">
+                  <div class="component-label">Tools</div>
+                  <div class="component-value">[AI-Agent-A, AI-Agent-B]</div>
+                </div>
+                <div class="component loop" data-concept="loop">
+                  <div class="component-label">Reasoning Loop</div>
+                  <div class="component-value">reason &rarr; act &rarr; observe &rarr; repeat</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agent A -->
+        <div class="agent-slot agent-a" id="slot-agent-a">
+          <div class="deployment">
+            <span class="deployment-label">Agent Runtime</span>
+            <div class="agent" data-agent="agent-a" id="agent-a">
+              <span class="agent-name">AI-Agent-A</span>
+              <div class="components">
+                <div class="component" data-concept="llm-a">
+                  <div class="component-label">LLM</div>
+                  <div class="component-value">Gemini 3.5</div>
+                </div>
+                <div class="component" data-concept="tools-a">
+                  <div class="component-label">Tools</div>
+                  <div class="component-value">Google Search &middot; Drive &middot; Custom MCP (SF)</div>
+                </div>
+                <div class="component" data-concept="memory">
+                  <div class="component-label">Memory</div>
+                  <div class="component-value">Session + State</div>
+                </div>
+                <div class="component loop" data-concept="loop">
+                  <div class="component-label">Reasoning Loop</div>
+                  <div class="component-value">reason &rarr; act &rarr; observe &rarr; repeat</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agent B -->
+        <div class="agent-slot agent-b" id="slot-agent-b">
+          <div class="deployment">
+            <span class="deployment-label">Cloud Run</span>
+            <div class="agent" data-agent="agent-b" id="agent-b">
+              <span class="agent-name">AI-Agent-B</span>
+              <div class="components">
+                <div class="component" data-concept="llm-b">
+                  <div class="component-label">LLM</div>
+                  <div class="component-value">Opus 4.8</div>
+                </div>
+                <div class="component" data-concept="tools-b">
+                  <div class="component-label">Tools</div>
+                  <div class="component-value">BigQuery &middot; GCS &middot; RAG</div>
+                </div>
+                <div class="component" data-concept="memory">
+                  <div class="component-label">Memory</div>
+                  <div class="component-value">Session + State</div>
+                </div>
+                <div class="component loop" data-concept="loop">
+                  <div class="component-label">Reasoning Loop</div>
+                  <div class="component-value">reason &rarr; act &rarr; observe &rarr; repeat</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SVG overlay for arrows -->
+        <svg class="arrows-overlay" viewBox="0 0 1200 920" preserveAspectRatio="none" id="arrows">
+          <defs>
+            <marker id="arrowhead-direct" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 Z" fill="#1F2937"/>
+            </marker>
+            <marker id="arrowhead-orchestrated" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 Z" fill="#6B7280"/>
+            </marker>
+            <marker id="arrowhead-agentic" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 Z" fill="#C2410C"/>
+            </marker>
+          </defs>
+
+          <!-- Q1 (direct) -> Agent-A: curves out left of queries, down left side, into top of Agent-A -->
+          <path id="arrow-q1" class="arrow-path arrow-direct" data-mode="direct" data-query="q1"
+                d="M 52,70 C 18,70 18,420 180,512"
+                marker-end="url(#arrowhead-direct)"/>
+
+          <!-- Q2 (direct) -> Agent-B: mirror, curves out right, down right side, into top of Agent-B -->
+          <path id="arrow-q2" class="arrow-path arrow-direct" data-mode="direct" data-query="q2"
+                d="M 1148,112 C 1182,112 1182,420 1020,512"
+                marker-end="url(#arrowhead-direct)"/>
+
+          <!-- Q3 (compound) -> Coordinator: straight down -->
+          <path id="arrow-q3" class="arrow-path arrow-direct" data-mode="orchestrated" data-query="q3"
+                d="M 600,172 L 600,254"
+                marker-end="url(#arrowhead-direct)"/>
+
+          <!-- Coordinator delegates -> Agent-A: curve from coord bottom-left -->
+          <path id="arrow-delegate-a" class="arrow-path arrow-orchestrated" data-mode="orchestrated"
+                d="M 440,460 C 380,488 300,500 280,512"
+                marker-end="url(#arrowhead-orchestrated)"/>
+
+          <!-- Coordinator delegates -> Agent-B: mirror -->
+          <path id="arrow-delegate-b" class="arrow-path arrow-orchestrated" data-mode="orchestrated"
+                d="M 760,460 C 820,488 900,500 920,512"
+                marker-end="url(#arrowhead-orchestrated)"/>
+
+          <!-- Agentic AI arrows (orange) - from each agent to the banner at bottom center -->
+          <!-- Coordinator down through the gap between specialist agents -->
+          <path id="arrow-agentic-coord" class="arrow-path arrow-agentic" data-agentic="true"
+                d="M 600,460 L 600,866"
+                marker-end="url(#arrowhead-agentic)"/>
+          <!-- Agent-A bottom curving right to banner left edge -->
+          <path id="arrow-agentic-a" class="arrow-path arrow-agentic" data-agentic="true"
+                d="M 300,866 Q 360,892 460,884"
+                marker-end="url(#arrowhead-agentic)"/>
+          <!-- Agent-B bottom curving left to banner right edge -->
+          <path id="arrow-agentic-b" class="arrow-path arrow-agentic" data-agentic="true"
+                d="M 900,866 Q 840,892 740,884"
+                marker-end="url(#arrowhead-agentic)"/>
+        </svg>
+
+        <!-- Agentic AI banner -->
+        <div class="agentic-banner" data-concept="agentic-ai" id="agentic-banner">
+          &uarr; Agentic AI &mdash; pattern: LLM + Tools + Memory + Loop
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail panel -->
+  <div class="detail-panel empty" id="detail-panel">
+    <span>Click any query, agent, component, or the Agentic AI banner to read the explainer here.</span>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-swatch enterprise"></div>
+      <div class="legend-text"><strong>Gemini Enterprise App</strong><span>The delivery surface end-users interact with via <code>@</code>-mentions.</span></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch agent"></div>
+      <div class="legend-text"><strong>AI Agent</strong><span>LLM + Tools + Memory + Reasoning Loop, the unit of agentic execution.</span></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch deployment"></div>
+      <div class="legend-text"><strong>Deployment surface</strong><span>Where the agent actually runs &mdash; Agent Runtime, Cloud Run, or GKE.</span></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch agentic"></div>
+      <div class="legend-text"><strong>Agentic AI</strong><span>A property the system exhibits, not a separate component or layer.</span></div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Built as a reference for the LLM &rarr; Agent &rarr; Agentic AI &rarr; Gemini Enterprise mental model.</span>
+    <span>Single-file HTML &middot; works offline</span>
+  </footer>
+
+</div>
+
+<script>
+  // ===== Detail content =====
+
+  const details = {
+    'q1': {
+      eyebrow: 'Query &middot; Direct invocation',
+      title: 'Single-agent routing via @-mention',
+      subtitle: 'The user names the specialist explicitly. No orchestrator involved.',
+      meta: [['Path', 'Query &rarr; AI-Agent-A'], ['Pattern', 'Direct invocation']],
+      body: `
+        <p>The <code>@</code>-mention syntax tells Gemini Enterprise to route this request to a specific registered agent, bypassing the default Core Assistant. AI-Agent-A handles it end-to-end &mdash; researching, calling its tools (Google Search, Drive, Salesforce via MCP), and returning a synthesized answer.</p>
+        <p>This is the simplest pattern: one agent, one task, no decomposition. Use it when the user knows which specialist they want.</p>
+      `
+    },
+    'q2': {
+      eyebrow: 'Query &middot; Direct invocation',
+      title: 'Single-agent routing via @-mention',
+      subtitle: 'Same pattern as Agent-A, different specialist.',
+      meta: [['Path', 'Query &rarr; AI-Agent-B'], ['Pattern', 'Direct invocation']],
+      body: `
+        <p>AI-Agent-B is the data specialist &mdash; it knows BigQuery, GCS, and how to retrieve from a RAG index. The <code>@</code>-mention skips orchestration entirely and sends the request straight to it.</p>
+        <p>The agent then runs its own loop internally: pick a tool (probably <code>BigQuery</code>), execute the query, observe results, decide whether to continue or answer.</p>
+      `
+    },
+    'q3': {
+      eyebrow: 'Query &middot; Compound &middot; Orchestrated',
+      title: 'Coordinator decomposes, then delegates',
+      subtitle: 'A query that requires both research and data &mdash; neither specialist can answer alone.',
+      meta: [['Path', 'Query &rarr; Coordinator &rarr; (Agent-A, Agent-B)'], ['Pattern', 'Multi-agent orchestration']],
+      body: `
+        <p>This query needs <em>both</em> historical research (Agent-A) and live BigQuery data (Agent-B), then a comparison between them. No single specialist can answer it.</p>
+        <p>The Coordinator's LLM reads the request, plans a decomposition, calls AI-Agent-A and AI-Agent-B as if they were function tools, collects their outputs, and synthesizes the comparison.</p>
+        <p>This is the <strong>agent-as-tool</strong> pattern: to the Coordinator's LLM, <code>invoke(AI-Agent-A, ...)</code> is the same shape of call as <code>query_bigquery(sql)</code>. The fact that the &ldquo;tool&rdquo; is itself an agent with its own loop is invisible to the caller.</p>
+      `
+    },
+    'coordinator': {
+      eyebrow: 'Agent &middot; Orchestrator role',
+      title: 'Coordinator / Root Agent',
+      subtitle: 'An agent whose tools are other agents.',
+      meta: [['LLM', 'Gemma 4'], ['Deployment', 'GKE'], ['Tools', '[AI-Agent-A, AI-Agent-B]']],
+      body: `
+        <p>The Coordinator is a fully-formed agent &mdash; LLM, tools, memory, loop &mdash; whose tools happen to be other agents instead of plain functions. When invoked with a compound query, it decomposes the request, decides which specialists to call, and in what order, then synthesizes their outputs.</p>
+        <p>The LLM here is <code>Gemma 4</code>: lighter and cheaper than the specialist models. Orchestrators don't need deep reasoning depth; they need to be good at <em>routing</em>. A smaller fast model is usually the right call.</p>
+        <p>It runs on GKE for fine-grained runtime control. Other deployment options would work equally well &mdash; Agent Runtime, Cloud Run, or anything that can host a long-running process and accept invocations.</p>
+      `
+    },
+    'agent-a': {
+      eyebrow: 'Agent &middot; Specialist',
+      title: 'AI-Agent-A &middot; the researcher',
+      subtitle: 'Open-ended research and synthesis using web + internal sources.',
+      meta: [['LLM', 'Gemini 3.5'], ['Deployment', 'Agent Runtime'], ['Tools', 'Google Search, Drive, MCP (Salesforce)']],
+      body: `
+        <p>Built for ambiguous, exploratory questions where the answer requires pulling from multiple sources and synthesizing. The MCP server connects to Salesforce so Agent-A can reach into customer data when needed.</p>
+        <p>Runs on Vertex AI Agent Runtime &mdash; the managed deployment surface. Agent Runtime handles session state, scaling, and lifecycle so the agent code doesn't need to.</p>
+        <p>Agentic mechanism: on each turn the LLM picks one of its tools, observes the result, decides whether it has enough, and either returns or continues. The loop is bounded by maximum iterations.</p>
+      `
+    },
+    'agent-b': {
+      eyebrow: 'Agent &middot; Specialist',
+      title: 'AI-Agent-B &middot; the data agent',
+      subtitle: 'Structured data retrieval and analysis from GCP-native sources.',
+      meta: [['LLM', 'Opus 4.8'], ['Deployment', 'Cloud Run'], ['Tools', 'BigQuery, GCS, RAG']],
+      body: `
+        <p>Built for precise data work &mdash; SQL generation against BigQuery, document retrieval from GCS, and grounded answers via a RAG pipeline. The Opus 4.8 model is overkill for routing but well-suited to careful SQL generation and reasoning over retrieved content.</p>
+        <p>Notice this is a non-Google model running inside a Google Gemini Enterprise app. That's the <strong>multi-LLM</strong> capability most diagrams miss: Vertex AI's Model Garden hosts Claude, and agents built on those models can be registered and invoked alongside Gemini-powered ones.</p>
+        <p>Deployed on Cloud Run for the simplest container-based hosting story. Cold-start latency is the tradeoff vs Agent Runtime, but the runtime is cheap and the operations model is straightforward.</p>
+      `
+    },
+    'llm-coord': {
+      eyebrow: 'Component &middot; LLM',
+      title: 'Gemma 4 as a routing model',
+      subtitle: 'Orchestrators don\'t need deep reasoning &mdash; they need fast, reliable routing.',
+      meta: [['Role', 'Routing &amp; decomposition']],
+      body: `
+        <p>The Coordinator's job is to read an incoming query, decide which sub-agents to call, and combine their outputs. That's a routing problem more than a reasoning problem, and small fast models do it well at a fraction of the cost.</p>
+        <p>The pattern generalizes: pick model size to match the cognitive load of the agent's role, not the prestige of the answer it produces.</p>
+      `
+    },
+    'llm-a': {
+      eyebrow: 'Component &middot; LLM',
+      title: 'Gemini 3.5 for research synthesis',
+      subtitle: 'Mainstream multimodal model, good for open-ended exploration.',
+      body: `
+        <p>Strong general-purpose reasoning, broad knowledge, good at synthesis across multiple sources. Reasonable cost per token. The right default for an agent that has to handle ambiguous research tasks.</p>
+      `
+    },
+    'llm-b': {
+      eyebrow: 'Component &middot; LLM',
+      title: 'Opus 4.8 for data reasoning',
+      subtitle: 'A non-Google model running inside a Google Gemini Enterprise app.',
+      body: `
+        <p>Claude Opus 4.8 is Anthropic's most capable model in the 4.x family. Strong at SQL generation, careful at reasoning over retrieved documents, conservative about hallucination.</p>
+        <p>The interesting part is that it works here at all: Vertex AI Model Garden hosts Claude, and Gemini Enterprise can register agents that use it. This breaks the common assumption that Gemini Enterprise means &ldquo;only Gemini.&rdquo;</p>
+      `
+    },
+    'tools-coord': {
+      eyebrow: 'Component &middot; Tools',
+      title: 'Tools = [AI-Agent-A, AI-Agent-B]',
+      subtitle: 'The agent-as-tool pattern, made literal.',
+      body: `
+        <p>From the Coordinator's LLM perspective, calling AI-Agent-A is structurally identical to calling any other function tool: provide inputs, receive outputs, observe, decide. The fact that the &ldquo;function&rdquo; happens to be another agent with its own loop is an implementation detail invisible to the caller.</p>
+        <p>This is the single most important architectural insight in multi-agent systems: there is no special &ldquo;agent dispatch&rdquo; mechanism. Agents are tools. The whole orchestration story falls out of that.</p>
+      `
+    },
+    'tools-a': {
+      eyebrow: 'Component &middot; Tools',
+      title: 'Research tool kit',
+      subtitle: 'Web, internal documents, and CRM data.',
+      body: `
+        <p><strong>Google Search</strong> for general public information. <strong>Drive</strong> for internal documents the company has indexed. <strong>Custom MCP (Salesforce)</strong> for customer-account data via the Model Context Protocol &mdash; an open standard for connecting tools to LLMs.</p>
+        <p>The LLM picks among these on each turn based on what the current step needs. The model decides; the tools just expose capability.</p>
+      `
+    },
+    'tools-b': {
+      eyebrow: 'Component &middot; Tools',
+      title: 'Data tool kit',
+      subtitle: 'Structured queries, object storage, and retrieval-augmented context.',
+      body: `
+        <p><strong>BigQuery</strong> for SQL against the warehouse. <strong>GCS</strong> for raw object storage when the agent needs to fetch files directly. <strong>RAG</strong> for retrieval-augmented generation over a curated document set.</p>
+        <p>Agent-B's loop typically goes: generate SQL &rarr; execute via BigQuery &rarr; observe results &rarr; either refine the query, retrieve supporting docs via RAG, or answer.</p>
+      `
+    },
+    'memory': {
+      eyebrow: 'Component &middot; Memory',
+      title: 'Session and state',
+      subtitle: 'What persists between turns.',
+      body: `
+        <p>Conversation history, intermediate tool outputs, learned facts about the user. Without memory, each turn would be a fresh start and the agent couldn't build on what came before.</p>
+        <p>In ADK, memory is split into <em>session state</em> (per-conversation, fast access) and <em>long-term memory</em> (persisted across sessions, retrieved as needed). Both live inside the agent's runtime context, not in the LLM itself.</p>
+      `
+    },
+    'loop': {
+      eyebrow: 'Component &middot; Reasoning Loop',
+      title: 'The mechanism that makes the agent agentic',
+      subtitle: 'Reason &rarr; act &rarr; observe &rarr; repeat.',
+      body: `
+        <p>This is the defining feature. Without the loop, the agent is just a single LLM call &mdash; question in, answer out. With the loop, the LLM can pick a tool, observe what it returns, decide whether the goal is met, and either continue or finish.</p>
+        <p>The loop is implemented by the agent runtime, not by the LLM. The LLM emits a structured decision on each turn (&ldquo;respond&rdquo; or &ldquo;call this tool with these arguments&rdquo;), and the runtime acts on it.</p>
+        <p>Strip the loop out and you have a chat completion. Add it back and you have an agent. This is the threshold where &ldquo;AI Agent&rdquo; stops being marketing.</p>
+      `
+    },
+    'agentic-ai': {
+      eyebrow: 'Concept &middot; The label, placed correctly',
+      title: 'Agentic AI is a property, not a layer',
+      subtitle: 'It describes the pattern, not a component that lives alongside the others.',
+      body: `
+        <p>Agentic AI isn't a box on the architecture diagram. It's a property that emerges when an AI system has all four of these: an LLM, tools, memory, and a loop that lets it iterate autonomously.</p>
+        <p>Any agent here &mdash; Coordinator, Agent-A, Agent-B &mdash; exhibits agentic AI individually. The Coordinator + specialists together also exhibit it, as a multi-agent system. There's no separate &ldquo;agentic AI&rdquo; thing somewhere on the diagram you can point at.</p>
+        <p>The mistake most diagrams make is putting &ldquo;Agentic AI&rdquo; in a box at the same level as &ldquo;AI Agent,&rdquo; as though they're parallel things. They aren't. AI Agent is the unit; Agentic AI is what the unit (or system of units) is doing.</p>
+      `
+    }
+  };
+
+  // ===== State =====
+
+  let currentMode = 'all';
+  let currentSelection = null;
+
+  // ===== Mode toggle =====
+
+  const modeButtons = document.querySelectorAll('.mode-button');
+  modeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      currentMode = mode;
+      modeButtons.forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode ? 'true' : 'false'));
+      applyMode();
+    });
+  });
+
+  function applyMode() {
+    const arrows = document.querySelectorAll('.arrow-path:not([data-agentic])');
+    const labels = document.querySelectorAll('.arrow-label');
+
+    arrows.forEach(a => {
+      const arrowMode = a.dataset.mode;
+      if (currentMode === 'all' || arrowMode === currentMode) {
+        a.classList.remove('dimmed');
+      } else {
+        a.classList.add('dimmed');
+      }
+    });
+
+    labels.forEach(l => {
+      const labelMode = l.dataset.mode;
+      if (!labelMode) return;
+      if (currentMode === 'all' || labelMode === currentMode) {
+        l.classList.remove('dimmed');
+      } else {
+        l.classList.add('dimmed');
+      }
+    });
+  }
+
+  // ===== Query buttons =====
+
+  document.querySelectorAll('.query').forEach(q => {
+    q.addEventListener('click', () => {
+      const queryId = q.dataset.query;
+      const target = q.dataset.target;
+
+      clearSelections();
+      q.classList.add('active');
+
+      // Highlight target agent (target is 'agent-a', 'agent-b', or 'coordinator')
+      const actualTargetId = target === 'coordinator' ? 'agent-coordinator' : target;
+      const targetAgent = document.getElementById(actualTargetId);
+      if (targetAgent) targetAgent.classList.add('highlight');
+
+      // Animate the arrow(s) for this query
+      animateQueryPath(queryId, target);
+
+      showDetail(queryId);
+    });
+  });
+
+  function animateQueryPath(queryId, target) {
+    // Remove any previous animation
+    document.querySelectorAll('.arrow-path').forEach(a => a.classList.remove('animating', 'active'));
+
+    const queryArrow = document.querySelector(`.arrow-path[data-query="${queryId}"]`);
+    if (queryArrow) {
+      queryArrow.classList.add('animating', 'active');
+    }
+
+    // If routed via coordinator, also animate the delegate arrows
+    if (target === 'coordinator') {
+      setTimeout(() => {
+        const delegateA = document.getElementById('arrow-delegate-a');
+        const delegateB = document.getElementById('arrow-delegate-b');
+        if (delegateA) delegateA.classList.add('animating', 'active');
+        if (delegateB) delegateB.classList.add('animating', 'active');
+
+        // Highlight both specialists
+        document.getElementById('agent-a').classList.add('highlight');
+        document.getElementById('agent-b').classList.add('highlight');
+      }, 600);
+    }
+  }
+
+  // ===== Agent boxes =====
+
+  document.querySelectorAll('.agent').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const agentId = a.dataset.agent;
+      clearSelections();
+      a.classList.add('active');
+      showDetail(agentId);
+    });
+  });
+
+  // ===== Components =====
+
+  document.querySelectorAll('.component').forEach(c => {
+    c.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const concept = c.dataset.concept;
+      clearSelections();
+      c.classList.add('active');
+      showDetail(concept);
+    });
+  });
+
+  // ===== Agentic banner =====
+
+  document.getElementById('agentic-banner').addEventListener('click', () => {
+    clearSelections();
+    document.getElementById('agentic-banner').classList.add('active');
+    showDetail('agentic-ai');
+  });
+
+  // ===== Helpers =====
+
+  function clearSelections() {
+    document.querySelectorAll('.query.active, .agent.active, .agent.highlight, .component.active, .agentic-banner.active').forEach(el => {
+      el.classList.remove('active', 'highlight');
+    });
+    document.querySelectorAll('.arrow-path.animating, .arrow-path.active').forEach(a => {
+      a.classList.remove('animating', 'active');
+    });
+  }
+
+  function showDetail(key) {
+    const detail = details[key];
+    const panel = document.getElementById('detail-panel');
+    if (!detail) {
+      panel.classList.add('empty');
+      panel.innerHTML = '<span>Click any query, agent, component, or the Agentic AI banner to read the explainer here.</span>';
+      return;
+    }
+    panel.classList.remove('empty');
+
+    let metaHTML = '';
+    if (detail.meta && detail.meta.length) {
+      metaHTML = '<div class="detail-meta">' + detail.meta.map(([k, v]) => `
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">${k}</span>
+          <span class="detail-meta-value">${v}</span>
+        </div>
+      `).join('') + '</div>';
+    }
+
+    panel.innerHTML = `
+      <div class="detail-eyebrow">${detail.eyebrow}</div>
+      <h2 class="detail-title">${detail.title}</h2>
+      <p class="detail-subtitle">${detail.subtitle || ''}</p>
+      ${metaHTML}
+      <div class="detail-body">${detail.body}</div>
+    `;
+
+    // Scroll panel into view if needed
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // Initialize
+  applyMode();
+</script>
+</body>
+</html>
