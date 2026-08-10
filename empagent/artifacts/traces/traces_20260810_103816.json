@@ -1,0 +1,951 @@
+{
+  "eval_cases": [
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "Onboard new employee John Doe"
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "IT setup for **John Doe** has been successfully completed:\n\n1. **Employee ID Created:** `EMP-1465`\n2. **Laptop Ordered:** Corporate Laptop (MacBook Pro / ThinkPad) for Employee ID `EMP-1465`"
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "eval_case_id": "onboard_john_doe",
+      "agent_data": {
+        "agents": {
+          "it_subagent": {
+            "agent_id": "it_subagent",
+            "agent_type": "LlmAgent",
+            "description": "Handles IT onboarding: Creates Employee ID (Emp ID) and orders laptop.",
+            "instruction": "You are the IT Subagent. When onboarding a new employee, perform IT tasks:\n1. Create an Employee ID (Emp ID) using the `create_emp_id` tool.\n2. Order a corporate laptop using the `order_laptop` tool.\nSummarize the IT setup once completed.",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Generate an Employee ID (Emp ID) for a new employee.\n\nArgs:\n    employee_name: Full name of the new employee.\n\nReturns:\n    A dict containing status, employee_name, and the generated emp_id.",
+                    "name": "create_emp_id",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "employee_name": {
+                          "title": "Employee Name",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "employee_name"
+                      ],
+                      "title": "create_emp_idParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Order a laptop for a new employee.\n\nArgs:\n    employee_name: Full name of the new employee.\n    emp_id: Employee ID of the employee if available.\n\nReturns:\n    A dict confirming the laptop order.",
+                    "name": "order_laptop",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "employee_name": {
+                          "title": "Employee Name",
+                          "type": "string"
+                        },
+                        "emp_id": {
+                          "default": "",
+                          "title": "Emp Id",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "employee_name"
+                      ],
+                      "title": "order_laptopParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          },
+          "payroll_subagent": {
+            "agent_id": "payroll_subagent",
+            "agent_type": "LlmAgent",
+            "description": "Handles Payroll onboarding: Schedules next month's salary payout.",
+            "instruction": "You are the Payroll Subagent. When onboarding a new employee, perform Payroll tasks:\n1. Schedule next month's salary using the `schedule_next_month_salary` tool.\nSummarize the payroll schedule once completed.",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Schedule next month's salary payout for a new employee.\n\nArgs:\n    employee_name: Full name of the new employee.\n    emp_id: Employee ID of the employee if available.\n\nReturns:\n    A dict confirming the scheduled salary payout.",
+                    "name": "schedule_next_month_salary",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "employee_name": {
+                          "title": "Employee Name",
+                          "type": "string"
+                        },
+                        "emp_id": {
+                          "default": "",
+                          "title": "Emp Id",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "employee_name"
+                      ],
+                      "title": "schedule_next_month_salaryParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          },
+          "shared_service_subagent": {
+            "agent_id": "shared_service_subagent",
+            "agent_type": "LlmAgent",
+            "description": "Handles Shared Services onboarding: Turns on cab service and enables facilities access.",
+            "instruction": "You are the Shared Service Subagent. When onboarding a new employee, perform Shared Service tasks:\n1. Turn on cab service using the `turn_on_cab` tool.\n2. Enable building facilities and desk access using the `enable_facilities` tool.\nSummarize cab and facilities activation once completed.",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Turn on cab / commute service for a new employee.\n\nArgs:\n    employee_name: Full name of the new employee.\n\nReturns:\n    A dict confirming cab service activation.",
+                    "name": "turn_on_cab",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "employee_name": {
+                          "title": "Employee Name",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "employee_name"
+                      ],
+                      "title": "turn_on_cabParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Enable facilities access (building access badge, desk allocation) for a new employee.\n\nArgs:\n    employee_name: Full name of the new employee.\n\nReturns:\n    A dict confirming facilities activation.",
+                    "name": "enable_facilities",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "employee_name": {
+                          "title": "Employee Name",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "employee_name"
+                      ],
+                      "title": "enable_facilitiesParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          },
+          "root_agent": {
+            "agent_id": "root_agent",
+            "agent_type": "LlmAgent",
+            "description": "Onboard coordinator root agent that routes new employee onboarding to IT, Payroll, and Shared Service sub-agents.",
+            "instruction": "You are the Onboard Coordinator (root_agent).\nWhen a new employee name enters for onboarding, route and delegate to all 3 sub-agents:\n1. `it_subagent`: Creates Emp ID and orders laptop.\n2. `payroll_subagent`: Schedules next month's salary.\n3. `shared_service_subagent`: Turns on cab service and enables facilities access.\n\nCoordinate with all three sub-agents and present a complete, organized onboarding summary.",
+            "tools": [],
+            "sub_agents": [
+              "it_subagent",
+              "payroll_subagent",
+              "shared_service_subagent"
+            ]
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "R9dJZFbJ",
+                        "args": {
+                          "agent_name": "it_subagent"
+                        },
+                        "name": "transfer_to_agent"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "R9dJZFbJ",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "it_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "Jf6EYKOu",
+                        "args": {
+                          "employee_name": "John Doe"
+                        },
+                        "name": "create_emp_id"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "it_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "Jf6EYKOu",
+                        "name": "create_emp_id",
+                        "response": {
+                          "status": "success",
+                          "employee_name": "John Doe",
+                          "emp_id": "EMP-1465",
+                          "message": "Employee ID EMP-1465 created successfully for John Doe."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "it_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "sQPn45pR",
+                        "args": {
+                          "employee_name": "John Doe",
+                          "emp_id": "EMP-1465"
+                        },
+                        "name": "order_laptop"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "it_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "sQPn45pR",
+                        "name": "order_laptop",
+                        "response": {
+                          "status": "success",
+                          "employee_name": "John Doe",
+                          "emp_id": "EMP-1465",
+                          "item": "Corporate Laptop (MacBook Pro / ThinkPad)",
+                          "message": "Laptop ordered successfully for John Doe."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "it_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "IT setup for **John Doe** has been successfully completed:\n\n1. **Employee ID Created:** `EMP-1465`\n2. **Laptop Ordered:** Corporate Laptop (MacBook Pro / ThinkPad) for Employee ID `EMP-1465`"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "prompt": {
+        "parts": [
+          {
+            "text": "New human name enter: Jane Smith. Please perform onboarding."
+          }
+        ],
+        "role": "user"
+      },
+      "responses": [
+        {
+          "response": {
+            "parts": [
+              {
+                "text": "# Onboarding Summary: Jane Smith\n\nAll onboarding tasks for **Jane Smith** have been completed successfully across IT, Payroll, and Shared Services.\n\n---\n\n### 1. IT Onboarding (`it_subagent`)\n- **Employee ID Created:** `EMP-1761`\n- **Equipment:** Corporate Laptop (MacBook Pro / ThinkPad) ordered\n\n### 2. Payroll Onboarding (`payroll_subagent`)\n- **Salary Schedule:** Scheduled for next month's payout (`EMP-1761`)\n\n### 3. Shared Services Onboarding (`shared_service_subagent`)\n- **Cab Service:** Activated\n- **Facilities & Building Access:** Enabled (Building Badge, Desk Allocation, Access Keycard)\n\n---\n\nJane Smith is fully onboarded and ready to start!"
+              }
+            ],
+            "role": "model"
+          }
+        }
+      ],
+      "eval_case_id": "onboard_jane_smith",
+      "agent_data": {
+        "agents": {
+          "it_subagent": {
+            "agent_id": "it_subagent",
+            "agent_type": "LlmAgent",
+            "description": "Handles IT onboarding: Creates Employee ID (Emp ID) and orders laptop.",
+            "instruction": "You are the IT Subagent. When onboarding a new employee, perform IT tasks:\n1. Create an Employee ID (Emp ID) using the `create_emp_id` tool.\n2. Order a corporate laptop using the `order_laptop` tool.\nSummarize the IT setup once completed.",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Generate an Employee ID (Emp ID) for a new employee.\n\nArgs:\n    employee_name: Full name of the new employee.\n\nReturns:\n    A dict containing status, employee_name, and the generated emp_id.",
+                    "name": "create_emp_id",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "employee_name": {
+                          "title": "Employee Name",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "employee_name"
+                      ],
+                      "title": "create_emp_idParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Order a laptop for a new employee.\n\nArgs:\n    employee_name: Full name of the new employee.\n    emp_id: Employee ID of the employee if available.\n\nReturns:\n    A dict confirming the laptop order.",
+                    "name": "order_laptop",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "employee_name": {
+                          "title": "Employee Name",
+                          "type": "string"
+                        },
+                        "emp_id": {
+                          "default": "",
+                          "title": "Emp Id",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "employee_name"
+                      ],
+                      "title": "order_laptopParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          },
+          "payroll_subagent": {
+            "agent_id": "payroll_subagent",
+            "agent_type": "LlmAgent",
+            "description": "Handles Payroll onboarding: Schedules next month's salary payout.",
+            "instruction": "You are the Payroll Subagent. When onboarding a new employee, perform Payroll tasks:\n1. Schedule next month's salary using the `schedule_next_month_salary` tool.\nSummarize the payroll schedule once completed.",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Schedule next month's salary payout for a new employee.\n\nArgs:\n    employee_name: Full name of the new employee.\n    emp_id: Employee ID of the employee if available.\n\nReturns:\n    A dict confirming the scheduled salary payout.",
+                    "name": "schedule_next_month_salary",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "employee_name": {
+                          "title": "Employee Name",
+                          "type": "string"
+                        },
+                        "emp_id": {
+                          "default": "",
+                          "title": "Emp Id",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "employee_name"
+                      ],
+                      "title": "schedule_next_month_salaryParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          },
+          "shared_service_subagent": {
+            "agent_id": "shared_service_subagent",
+            "agent_type": "LlmAgent",
+            "description": "Handles Shared Services onboarding: Turns on cab service and enables facilities access.",
+            "instruction": "You are the Shared Service Subagent. When onboarding a new employee, perform Shared Service tasks:\n1. Turn on cab service using the `turn_on_cab` tool.\n2. Enable building facilities and desk access using the `enable_facilities` tool.\nSummarize cab and facilities activation once completed.",
+            "tools": [
+              {
+                "function_declarations": [
+                  {
+                    "description": "Turn on cab / commute service for a new employee.\n\nArgs:\n    employee_name: Full name of the new employee.\n\nReturns:\n    A dict confirming cab service activation.",
+                    "name": "turn_on_cab",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "employee_name": {
+                          "title": "Employee Name",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "employee_name"
+                      ],
+                      "title": "turn_on_cabParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              },
+              {
+                "function_declarations": [
+                  {
+                    "description": "Enable facilities access (building access badge, desk allocation) for a new employee.\n\nArgs:\n    employee_name: Full name of the new employee.\n\nReturns:\n    A dict confirming facilities activation.",
+                    "name": "enable_facilities",
+                    "parameters_json_schema": {
+                      "properties": {
+                        "employee_name": {
+                          "title": "Employee Name",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "employee_name"
+                      ],
+                      "title": "enable_facilitiesParams",
+                      "type": "object"
+                    },
+                    "response_json_schema": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    }
+                  }
+                ]
+              }
+            ],
+            "sub_agents": []
+          },
+          "root_agent": {
+            "agent_id": "root_agent",
+            "agent_type": "LlmAgent",
+            "description": "Onboard coordinator root agent that routes new employee onboarding to IT, Payroll, and Shared Service sub-agents.",
+            "instruction": "You are the Onboard Coordinator (root_agent).\nWhen a new employee name enters for onboarding, route and delegate to all 3 sub-agents:\n1. `it_subagent`: Creates Emp ID and orders laptop.\n2. `payroll_subagent`: Schedules next month's salary.\n3. `shared_service_subagent`: Turns on cab service and enables facilities access.\n\nCoordinate with all three sub-agents and present a complete, organized onboarding summary.",
+            "tools": [],
+            "sub_agents": [
+              "it_subagent",
+              "payroll_subagent",
+              "shared_service_subagent"
+            ]
+          }
+        },
+        "turns": [
+          {
+            "turn_index": 0,
+            "turn_id": "turn_0",
+            "events": [
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "wnGB3uMe",
+                        "args": {
+                          "agent_name": "it_subagent"
+                        },
+                        "name": "transfer_to_agent"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "wnGB3uMe",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "it_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "MP7flF8b",
+                        "args": {
+                          "employee_name": "Jane Smith"
+                        },
+                        "name": "create_emp_id"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "it_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "MP7flF8b",
+                        "name": "create_emp_id",
+                        "response": {
+                          "status": "success",
+                          "employee_name": "Jane Smith",
+                          "emp_id": "EMP-1761",
+                          "message": "Employee ID EMP-1761 created successfully for Jane Smith."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "it_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "g7iw4i75",
+                        "args": {
+                          "emp_id": "EMP-1761",
+                          "employee_name": "Jane Smith"
+                        },
+                        "name": "order_laptop"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "it_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "g7iw4i75",
+                        "name": "order_laptop",
+                        "response": {
+                          "status": "success",
+                          "employee_name": "Jane Smith",
+                          "emp_id": "EMP-1761",
+                          "item": "Corporate Laptop (MacBook Pro / ThinkPad)",
+                          "message": "Laptop ordered successfully for Jane Smith."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "it_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "393qsk80",
+                        "args": {
+                          "agent_name": "root_agent"
+                        },
+                        "name": "transfer_to_agent"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "it_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "393qsk80",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "zicDw67v",
+                        "args": {
+                          "agent_name": "payroll_subagent"
+                        },
+                        "name": "transfer_to_agent"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "zicDw67v",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "payroll_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "OtAggGKR",
+                        "args": {
+                          "employee_name": "Jane Smith",
+                          "emp_id": "EMP-1761"
+                        },
+                        "name": "schedule_next_month_salary"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "payroll_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "OtAggGKR",
+                        "name": "schedule_next_month_salary",
+                        "response": {
+                          "status": "success",
+                          "employee_name": "Jane Smith",
+                          "emp_id": "EMP-1761",
+                          "payroll_status": "Scheduled for next month",
+                          "message": "Next month salary scheduled successfully for Jane Smith."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "payroll_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "6upmOBpY",
+                        "args": {
+                          "agent_name": "root_agent"
+                        },
+                        "name": "transfer_to_agent"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "payroll_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "6upmOBpY",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "d3bYlQEg",
+                        "args": {
+                          "agent_name": "shared_service_subagent"
+                        },
+                        "name": "transfer_to_agent"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "d3bYlQEg",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "shared_service_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "UD1RXc54",
+                        "args": {
+                          "employee_name": "Jane Smith"
+                        },
+                        "name": "turn_on_cab"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "shared_service_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "UD1RXc54",
+                        "name": "turn_on_cab",
+                        "response": {
+                          "status": "success",
+                          "employee_name": "Jane Smith",
+                          "cab_service": "Active",
+                          "message": "Cab service activated successfully for Jane Smith."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "shared_service_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "QT0iL8qh",
+                        "args": {
+                          "employee_name": "Jane Smith"
+                        },
+                        "name": "enable_facilities"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "shared_service_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "QT0iL8qh",
+                        "name": "enable_facilities",
+                        "response": {
+                          "status": "success",
+                          "employee_name": "Jane Smith",
+                          "facilities": [
+                            "Building Badge",
+                            "Desk Allocation",
+                            "Access Keycard"
+                          ],
+                          "message": "Facilities and building access turned on successfully for Jane Smith."
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "shared_service_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_call": {
+                        "id": "8nDQ8ICS",
+                        "args": {
+                          "agent_name": "root_agent"
+                        },
+                        "name": "transfer_to_agent"
+                      }
+                    }
+                  ],
+                  "role": "model"
+                }
+              },
+              {
+                "author": "shared_service_subagent",
+                "content": {
+                  "parts": [
+                    {
+                      "function_response": {
+                        "id": "8nDQ8ICS",
+                        "name": "transfer_to_agent",
+                        "response": {
+                          "result": null
+                        }
+                      }
+                    }
+                  ],
+                  "role": "user"
+                }
+              },
+              {
+                "author": "root_agent",
+                "content": {
+                  "parts": [
+                    {
+                      "text": "# Onboarding Summary: Jane Smith\n\nAll onboarding tasks for **Jane Smith** have been completed successfully across IT, Payroll, and Shared Services.\n\n---\n\n### 1. IT Onboarding (`it_subagent`)\n- **Employee ID Created:** `EMP-1761`\n- **Equipment:** Corporate Laptop (MacBook Pro / ThinkPad) ordered\n\n### 2. Payroll Onboarding (`payroll_subagent`)\n- **Salary Schedule:** Scheduled for next month's payout (`EMP-1761`)\n\n### 3. Shared Services Onboarding (`shared_service_subagent`)\n- **Cab Service:** Activated\n- **Facilities & Building Access:** Enabled (Building Badge, Desk Allocation, Access Keycard)\n\n---\n\nJane Smith is fully onboarded and ready to start!"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
