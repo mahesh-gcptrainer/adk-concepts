@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADK vs. Managed Agents API — Build it or Borrow it</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F4EF; --panel:#FFFFFF; --panel-2:#EFEBE1; --line:#DDD6C6;
+    --amber:#C8722A; --cyan:#0E7A6E; --violet:#6A4FB5;
+    --text:#231F18; --muted:#6B6455; --danger:#B3402C; --radius:10px;
+    --code-bg:#191510; --code-line:#38322A; --code-text:#EFE9DD;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:
+      radial-gradient(ellipse 900px 500px at 10% -5%, rgba(14,122,110,0.05), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 95% 5%, rgba(200,114,42,0.06), transparent 60%),
+      var(--bg);
+    color:var(--text); font-family:'Inter',sans-serif; line-height:1.55;
+  }
+  h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif; letter-spacing:-0.01em;}
+  code,.mono{font-family:'IBM Plex Mono',monospace;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 28px;}
+  a{color:var(--cyan);}
+
+  /* ---- sticky mode bar ---- */
+  .modebar{
+    position:sticky; top:0; z-index:60; backdrop-filter:blur(10px);
+    background:rgba(246,244,239,0.88); border-bottom:1px solid var(--line);
+    padding:14px 0;
+  }
+  .modebar .wrap{display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  .modebar .tag{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase;}
+  .segctrl{display:flex; background:var(--panel); border:1px solid var(--line); border-radius:30px; padding:4px; gap:2px;}
+  .segctrl button{
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px; padding:8px 16px; border-radius:24px;
+    border:none; background:transparent; color:var(--muted); cursor:pointer; transition:all .2s; white-space:nowrap;
+  }
+  .segctrl button.active{color:#FBF9F4; font-weight:600;}
+  .segctrl button[data-mode="adk"].active{background:var(--cyan);}
+  .segctrl button[data-mode="hybrid"].active{background:var(--violet);}
+  .segctrl button[data-mode="managed"].active{background:var(--amber);}
+  @media (max-width:640px){.segctrl{width:100%;} .segctrl button{flex:1; padding:8px 6px; font-size:11px;}}
+
+  /* ---- hero ---- */
+  .hero{padding:80px 0 50px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--amber);
+    letter-spacing:.14em; text-transform:uppercase; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:7px;height:7px;border-radius:50%;background:var(--amber); box-shadow:0 0 0 0 rgba(255,180,84,.6); animation:pulse 2s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,180,84,.5);}70%{box-shadow:0 0 0 8px rgba(255,180,84,0);}100%{box-shadow:0 0 0 0 rgba(255,180,84,0);}}
+  .hero h1{font-size:clamp(30px,4.6vw,50px); margin:16px 0 14px; font-weight:700; max-width:760px;}
+  .hero h1 span{color:var(--cyan);}
+  .hero p.sub{color:var(--muted); font-size:16.5px; max-width:640px; margin:0 0 8px;}
+  .hero .note{color:var(--muted); font-size:12.5px; font-family:'IBM Plex Mono',monospace; margin-top:18px;}
+
+  section{padding:70px 0; border-top:1px solid var(--line);}
+  .kicker{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); letter-spacing:.12em; text-transform:uppercase; margin-bottom:10px;}
+  .kicker b{color:var(--amber);}
+  section > .wrap > h2{font-size:clamp(22px,3vw,30px); margin:0 0 14px; font-weight:600;}
+  section > .wrap > p.lead{color:var(--muted); max-width:680px; font-size:15px; margin-bottom:32px;}
+
+  /* ---- ownership meter ---- */
+  .meter-shell{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:26px 28px;}
+  .meter-track{position:relative; height:6px; background:var(--panel-2); border-radius:6px; margin:34px 0 10px;
+    background:linear-gradient(90deg, var(--cyan), var(--violet), var(--amber));}
+  .meter-dot{
+    position:absolute; top:50%; width:20px; height:20px; border-radius:50%; background:var(--bg);
+    border:3px solid var(--text); transform:translate(-50%,-50%); transition:left .35s ease;
+  }
+  .meter-labels{display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--muted);}
+  .meter-desc{margin-top:22px; font-size:14.5px; color:var(--text); min-height:44px;}
+  .meter-desc b{color:var(--amber);}
+
+  /* ---- diagram ---- */
+  .lanes{display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;}
+  @media (max-width:700px){.lanes{grid-template-columns:1fr;}}
+  .lane{background:var(--panel); padding:22px 24px; transition:background .3s, opacity .3s;}
+  .lane.dim{opacity:.35;}
+  .lane + .lane{border-left:1px dashed var(--line);}
+  @media (max-width:700px){.lane + .lane{border-left:none; border-top:1px dashed var(--line);}}
+  .lane .label{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; margin-bottom:14px; display:block;}
+  .lane.you .label{color:var(--cyan);}
+  .lane.google .label{color:var(--amber);}
+  .lnode{background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:12px 14px; font-size:13px; margin-bottom:10px;}
+  .lnode .t{font-weight:600; margin-bottom:2px; font-family:'Space Grotesk',sans-serif;}
+  .lnode .d{color:var(--muted); font-size:12px;}
+  .bridge-row{
+    display:flex; align-items:center; justify-content:center; gap:10px; padding:14px 0; color:var(--violet);
+    font-family:'IBM Plex Mono',monospace; font-size:12px; grid-column:1/-1; background:var(--panel-2);
+    border-top:1px dashed var(--line); display:none;
+  }
+  .bridge-row.show{display:flex;}
+
+  /* ---- analogy ---- */
+  .analogy-shell{
+    display:flex; gap:22px; align-items:flex-start; background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--radius); padding:26px 28px;
+  }
+  @media (max-width:640px){.analogy-shell{flex-direction:column;}}
+  .analogy-icon{
+    flex:0 0 56px; height:56px; width:56px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+    font-size:26px; transition:background .3s, color .3s; border:1px solid var(--line);
+  }
+  .analogy-title{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:16px; margin-bottom:8px;}
+  .analogy-text{color:var(--muted); font-size:14.5px; margin:0; max-width:600px;}
+  .analogy-caveat{
+    margin-top:16px; font-size:13px; color:var(--muted); background:var(--panel-2); border:1px solid var(--line);
+    border-radius:8px; padding:14px 16px;
+  }
+  .analogy-caveat b{color:var(--text);}
+
+  /* ---- comparison table ---- */
+  table.cmp{width:100%; border-collapse:collapse; font-size:13.8px;}
+  table.cmp th, table.cmp td{padding:13px 14px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top;}
+  table.cmp th{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; font-weight:500;}
+  table.cmp td.crit{color:var(--muted); font-size:12.5px; width:22%;}
+  table.cmp td.col{transition:background .25s, color .25s; border-radius:6px;}
+  table.cmp td.col.active-adk{background:rgba(94,234,212,0.08); color:var(--cyan);}
+  table.cmp td.col.active-hybrid{background:rgba(196,166,255,0.08); color:var(--violet);}
+  table.cmp td.col.active-managed{background:rgba(255,180,84,0.08); color:var(--amber);}
+  .cmp-wrap{overflow-x:auto;}
+
+  /* ---- code panel ---- */
+  .codebox{background:var(--code-bg); border:1px solid var(--code-line); border-radius:var(--radius); overflow:hidden;}
+  .codebox .tab{display:flex; align-items:center; gap:8px; padding:10px 16px; border-bottom:1px solid var(--code-line); font-family:'IBM Plex Mono',monospace; font-size:12px; color:#9C9484;}
+  .codebox .tab .dot{width:7px;height:7px;border-radius:50%;}
+  .codebox pre{margin:0; padding:18px 18px 20px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; overflow-x:auto; line-height:1.7; color:var(--code-text);}
+  .kw{color:#F0A857;} .str{color:#6FD9C7;} .cm{color:#9C9484;} .fn{color:#C9AEFF;}
+  .code-note{color:var(--muted); font-size:13.5px; margin-top:14px; max-width:640px;}
+
+  /* ---- limitations ---- */
+  .warn-panel{background:linear-gradient(180deg, rgba(179,64,44,.06), transparent); border:1px solid rgba(179,64,44,.3); border-radius:var(--radius); padding:24px 26px;}
+  .warn-panel .tag{display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--danger); border:1px solid rgba(179,64,44,.35); padding:5px 12px; border-radius:20px; margin-bottom:16px;}
+  .warn-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;}
+  @media (max-width:700px){.warn-grid{grid-template-columns:1fr;}}
+  .warn-item{background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:14px;}
+  .warn-item .t{font-weight:600; margin-bottom:4px; font-size:13.5px;}
+  .warn-item .d{color:var(--muted); font-size:12.8px;}
+
+  /* ---- decision helper ---- */
+  .quiz{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:26px 28px;}
+  .q-step{display:none;}
+  .q-step.active{display:block; animation:fade .3s;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);}to{opacity:1; transform:none;}}
+  .q-title{font-size:15.5px; font-weight:600; margin-bottom:16px;}
+  .q-opts{display:flex; gap:10px; flex-wrap:wrap;}
+  .q-opts button{
+    font-family:'IBM Plex Mono',monospace; font-size:13px; padding:11px 18px; border-radius:8px;
+    border:1px solid var(--line); background:var(--panel-2); color:var(--text); cursor:pointer; transition:all .2s;
+  }
+  .q-opts button:hover{border-color:var(--amber);}
+  .q-result{display:flex; align-items:flex-start; gap:16px;}
+  .q-result .badge{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; padding:8px 14px; border-radius:8px; white-space:nowrap;
+  }
+  .q-result .badge.adk{background:rgba(94,234,212,.15); color:var(--cyan); border:1px solid var(--cyan);}
+  .q-result .badge.hybrid{background:rgba(196,166,255,.15); color:var(--violet); border:1px solid var(--violet);}
+  .q-result .badge.managed{background:rgba(255,180,84,.15); color:var(--amber); border:1px solid var(--amber);}
+  .q-result p{margin:0; color:var(--muted); font-size:14px;}
+  .q-restart{margin-top:16px; background:none; border:none; color:var(--muted); text-decoration:underline; cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:12px; padding:0;}
+
+  footer{padding:50px 0 70px; text-align:center; color:var(--muted); font-size:13px; font-family:'IBM Plex Mono',monospace;}
+  footer a{color:var(--muted); text-decoration:underline;}
+  footer .srcs{margin-top:10px; font-size:11.5px; opacity:.75;}
+</style>
+</head>
+<body>
+
+<div class="modebar">
+  <div class="wrap">
+    <span class="tag">Viewing as</span>
+    <div class="segctrl" id="segctrl">
+      <button data-mode="adk" class="active">Build with ADK</button>
+      <button data-mode="hybrid">ADK + Managed Agent</button>
+      <button data-mode="managed">Managed Agents API</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap hero">
+  <div class="eyebrow">Google Cloud · agent building models</div>
+  <h1>Build the agent yourself, or <span>borrow one Google already runs</span></h1>
+  <p class="sub">ADK and the Managed Agents API on Agent Platform solve the same problem — getting an autonomous agent running — from opposite ends of the ownership spectrum. Use the switch above; every section below reacts to it.</p>
+  <div class="note">Managed Agents API on Agent Platform is a <strong style="color:var(--danger)">Pre‑GA / preview</strong> product as of Aug 2026 — Google's own docs say not to use it with proprietary or sensitive data, or in production yet.</div>
+</div>
+
+<section id="s-meter">
+  <div class="wrap">
+    <div class="kicker">01 · <b>The spectrum</b></div>
+    <h2>Where does control live?</h2>
+    <p class="lead">Same three modes as the switch above. Drag your eye left to right: reasoning, tools, and the sandbox move from your process to Google's.</p>
+    <div class="meter-shell">
+      <div class="meter-track">
+        <div class="meter-dot" id="meterdot"></div>
+      </div>
+      <div class="meter-labels">
+        <span>You own it</span>
+        <span>Shared</span>
+        <span>Google owns it</span>
+      </div>
+      <div class="meter-desc" id="meterdesc"></div>
+    </div>
+  </div>
+</section>
+
+<section id="s-diagram">
+  <div class="wrap">
+    <div class="kicker">02 · <b>Architecture</b></div>
+    <h2>Your process vs. Google's sandbox</h2>
+    <p class="lead">ADK code runs and calls out; the Managed Agents API runs inside Google's <strong>Antigravity harness</strong> — reasoning, tools, and file I/O all happen inside an isolated sandbox that, by default, has no network access or credentials.</p>
+    <div class="lanes">
+      <div class="lane you" id="lane-you">
+        <span class="label">Your ADK process</span>
+        <div class="lnode"><div class="t">LlmAgent / Agent</div><div class="d">Model, instruction, tools — all yours to configure</div></div>
+        <div class="lnode"><div class="t">Custom function tools + MCP tools</div><div class="d">Declared and executed client-side</div></div>
+        <div class="lnode"><div class="t">Runs wherever you deploy it</div><div class="d">Local, Cloud Run, GKE, or Agent Runtime</div></div>
+      </div>
+      <div class="lane google" id="lane-google">
+        <span class="label">Google's managed sandbox</span>
+        <div class="lnode"><div class="t">Agents API (control plane)</div><div class="d">Create the agent, mount GCS skills, set network allowlists</div></div>
+        <div class="lnode"><div class="t">Interactions API (data plane)</div><div class="d">Streamed reasoning + code execution, server-side</div></div>
+        <div class="lnode"><div class="t">Isolated container</div><div class="d">No network / credentials unless you explicitly enable them</div></div>
+      </div>
+      <div class="bridge-row" id="bridgerow">⟷ ADK's <code>ManagedAgent</code> class talks only to the Interactions API — it never touches the control plane ⟷</div>
+    </div>
+  </div>
+</section>
+
+<section id="s-analogy">
+  <div class="wrap">
+    <div class="kicker">03 · <b>In one analogy</b></div>
+    <h2>Your car, or a taxi</h2>
+    <p class="lead">Same three modes, told as a trip. Toggle above still drives this.</p>
+    <div class="analogy-shell">
+      <div class="analogy-icon" id="analogyicon"></div>
+      <div class="analogy-body">
+        <div class="analogy-title" id="analogytitle"></div>
+        <p class="analogy-text" id="analogytext"></p>
+      </div>
+    </div>
+    <div class="analogy-caveat">
+      <b>Where this analogy stretches thin:</b> "zero maintenance" oversells the taxi side — with the Managed Agents API you still configure the agent, decide what it can reach on the network, and are expected to review its actions. It's closer to a taxi where you still hand the driver the route and a toll pass. And it's a Pre‑GA service, not a licensed cab company with an established track record yet.
+    </div>
+  </div>
+</section>
+
+<section id="s-table">
+  <div class="wrap">
+    <div class="kicker">04 · <b>Side by side</b></div>
+    <h2>Six questions that decide which one fits</h2>
+    <div class="cmp-wrap">
+    <table class="cmp">
+      <thead><tr><th></th><th>ADK agent</th><th>ADK + <code>ManagedAgent</code></th><th>Managed Agents API direct</th></tr></thead>
+      <tbody>
+        <tr><td class="crit">Who owns reasoning &amp; tools</td><td class="col c-adk">You — full control over model, prompt, tools</td><td class="col c-hybrid">Split — your ADK flow orchestrates, one node runs on Google's backend</td><td class="col c-managed">Google — you configure, you don't build</td></tr>
+        <tr><td class="crit">Where it executes</td><td class="col c-adk">Your process: local, Cloud Run, GKE, Agent Runtime</td><td class="col c-hybrid">Your ADK process + a remote sandbox for that one node</td><td class="col c-managed">Antigravity sandbox on Agent Platform, isolated by default</td></tr>
+        <tr><td class="crit">Tool support</td><td class="col c-adk">Custom function tools + MCP tools, fully client-side</td><td class="col c-hybrid">Server-side tools only — client/MCP tools raise <code>NotImplementedError</code></td><td class="col c-managed">Predefined server-side toolset (code exec, web search, skills)</td></tr>
+        <tr><td class="crit">Auth</td><td class="col c-adk">Whatever you configure for your chosen model backend</td><td class="col c-hybrid">Gemini API key, or Agent Platform via <code>gcloud auth application-default login</code></td><td class="col c-managed">Google Cloud credentials against the Agents/Interactions API</td></tr>
+        <tr><td class="crit">Location constraint</td><td class="col c-adk">None inherent to ADK</td><td class="col c-hybrid">Agent Platform backend pinned to <code>global</code></td><td class="col c-managed">Served only from <code>global</code></td></tr>
+        <tr><td class="crit">Best fit</td><td class="col c-adk">Custom multi-agent logic, MCP integrations, fine-grained control</td><td class="col c-hybrid">One pipeline step needs a heavy sandbox you don't want to build</td><td class="col c-managed">Fast prototyping of an autonomous agent, no runtime to build</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<section id="s-code">
+  <div class="wrap">
+    <div class="kicker">05 · <b>In code</b></div>
+    <h2 id="code-heading">Building it with ADK</h2>
+    <div class="codebox">
+      <div class="tab"><span class="dot" id="codedot" style="background:var(--cyan);"></span><span id="codetabtitle">agent.py</span></div>
+      <pre id="codebody"></pre>
+    </div>
+    <p class="code-note" id="codenote"></p>
+  </div>
+</section>
+
+<section id="s-limits">
+  <div class="wrap">
+    <div class="kicker">06 · <b>Read this before you commit</b></div>
+    <h2>What the Managed Agents API won't do (yet)</h2>
+    <p class="lead">Straight from Google's docs — not edge cases, but hard limits worth knowing before you build a course demo or a pilot around them.</p>
+    <div class="warn-panel">
+      <span class="tag">⚠ pre-GA limitations</span>
+      <div class="warn-grid">
+        <div class="warn-item"><div class="t">No client or MCP tools inside ManagedAgent</div><div class="d">Only server-side tools run in the managed sandbox; passing a function tool or MCP tool raises <code>NotImplementedError</code>.</div></div>
+        <div class="warn-item"><div class="t">Streaming only</div><div class="d">ManagedAgent uses streaming interactions; background polling isn't fully supported yet.</div></div>
+        <div class="warn-item"><div class="t">Pinned to global</div><div class="d">The Agent Platform backend serves the Managed Agents API only from the <code>global</code> location — regional endpoints error out.</div></div>
+        <div class="warn-item"><div class="t">No network or credentials by default</div><div class="d">Every agent starts with zero outbound access; you opt in explicitly, scoped as narrowly as possible.</div></div>
+        <div class="warn-item"><div class="t">Not for sensitive data yet</div><div class="d">Google's own terms: this is Pre-GA — don't point it at proprietary or confidential data, and don't rely on it in production.</div></div>
+        <div class="warn-item"><div class="t">ADK never touches the control plane</div><div class="d"><code>ManagedAgent</code> only calls the Interactions API — it can't create or configure a new managed agent resource.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="s-quiz">
+  <div class="wrap">
+    <div class="kicker">07 · <b>Decide</b></div>
+    <h2>Which one should you actually reach for?</h2>
+    <div class="quiz" id="quiz">
+      <div class="q-step active" data-step="0">
+        <div class="q-title">Does this agent need custom function tools or an MCP server?</div>
+        <div class="q-opts">
+          <button data-go="1" data-yes="true">Yes, it needs custom or MCP tools</button>
+          <button data-go="1" data-yes="false">No, built-in tools are enough</button>
+        </div>
+      </div>
+      <div class="q-step" data-step="1">
+        <div class="q-title">Do you want to skip writing agent code entirely — just configure and call?</div>
+        <div class="q-opts">
+          <button data-go="2" data-nocode="true">Yes, no runtime to build</button>
+          <button data-go="2" data-nocode="false">No, I'm fine writing an agent</button>
+        </div>
+      </div>
+      <div class="q-step" data-step="2">
+        <div class="q-title">Is this one step inside a bigger multi-agent ADK pipeline you're already building?</div>
+        <div class="q-opts">
+          <button data-go="result" data-pipeline="true">Yes, it's one node in a larger flow</button>
+          <button data-go="result" data-pipeline="false">No, it's a standalone task</button>
+        </div>
+      </div>
+      <div class="q-step" data-step="result">
+        <div class="q-result">
+          <span class="badge" id="resultbadge"></span>
+          <p id="resulttext"></p>
+        </div>
+        <button class="q-restart" id="restartquiz">Start over</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Built as a training reference on ADK 2.x vs. the Managed Agents API on Agent Platform.
+  <div class="srcs">Sources: adk.dev/agents/managed-agents · docs.cloud.google.com/gemini-enterprise-agent-platform/build/managed-agents · Google Cloud I/O '26 agent developer coverage</div>
+</footer>
+
+<script>
+  const MODES = ['adk','hybrid','managed'];
+  let mode = 'adk';
+
+  const meterPos = { adk: 8, hybrid: 50, managed: 92 };
+  const meterDesc = {
+    adk: "<b>ADK</b> — your process owns the model, the instructions, and every tool call. Nothing runs on Google's servers except the model inference itself.",
+    hybrid: "<b>ADK + ManagedAgent</b> — your flow stays in your process, but one node's reasoning and tools run inside Google's sandbox via the Interactions API.",
+    managed: "<b>Managed Agents API</b> — Google's Antigravity harness owns reasoning, tools, and the sandbox end to end. You configure it; you don't build it."
+  };
+
+  const analogy = {
+    adk: {
+      icon: "🚗", iconBg: "rgba(94,234,212,0.12)", iconColor: "var(--cyan)",
+      title: "Your own car",
+      text: "You hold the keys and the title. Pick the engine, the color, the route, the speed. Full control over the cognitive architecture, the tools, and every reasoning step — and full responsibility for gas, oil changes, and repairs, i.e. the Cloud Run or GKE infrastructure underneath."
+    },
+    hybrid: {
+      icon: "🚕", iconBg: "rgba(196,166,255,0.14)", iconColor: "var(--violet)",
+      title: "Your car, one leg by taxi",
+      text: "You're still driving your own trip end to end — but for one stretch you don't want to deal with yourself, you hail a taxi. That's the ManagedAgent node: your ADK flow keeps the wheel, one step's reasoning and tools ride in Google's sandbox instead."
+    },
+    managed: {
+      icon: "🚕", iconBg: "rgba(255,180,84,0.14)", iconColor: "var(--amber)",
+      title: "The taxi",
+      text: "You give the driver a destination and a toll pass — your prompt, your data, your skills — and the service handles the sandbox and the driving. You can't swap the engine or dictate the exact route, and you're still the one who has to tell it where to go and check it went the right way."
+    }
+  };
+
+  const codeSnippets = {
+    adk: {
+      title: "agent.py — ADK LlmAgent",
+      dot: "var(--cyan)",
+      note: "You declare the model, the instruction, and the tools — including custom function tools and MCP tools. This process can run locally, on Cloud Run, on GKE, or on Agent Runtime.",
+      html:
+`<span class="kw">from</span> google.adk.agents <span class="kw">import</span> Agent
+<span class="kw">from</span> google.adk.models <span class="kw">import</span> Gemini
+<span class="kw">from</span> google.adk.tools <span class="kw">import</span> google_search
+
+root_agent = <span class="fn">Agent</span>(
+    name=<span class="str">"research_agent"</span>,
+    model=<span class="fn">Gemini</span>(model=<span class="str">"gemini-3.5-flash"</span>),
+    instruction=<span class="str">"""You are a careful research assistant.
+Use google_search for anything time-sensitive."""</span>,
+    tools=[google_search],  <span class="cm"># client-side, yours to extend with MCP tools</span>
+)`
+    },
+    hybrid: {
+      title: "agent.py — ADK with a ManagedAgent node",
+      dot: "var(--violet)",
+      note: "ManagedAgent implements the same BaseAgent contract as any other ADK agent, so it drops straight into a flow. Under the hood it calls only the Interactions API (data plane) — it never creates or manages an agent resource on the control plane.",
+      html:
+`<span class="kw">from</span> google.adk.agents <span class="kw">import</span> ManagedAgent
+<span class="kw">from</span> google.genai <span class="kw">import</span> types
+
+_AGENT_ID = <span class="str">"antigravity-preview-05-2026"</span>
+
+managed_code_agent = <span class="fn">ManagedAgent</span>(
+    name=<span class="str">"managed_code_execution_agent"</span>,
+    description=<span class="str">"Solves computational questions server-side."</span>,
+    agent_id=_AGENT_ID,
+    environment={<span class="str">'type'</span>: <span class="str">'remote'</span>},
+    tools=[types.Tool(code_execution=types.ToolCodeExecution())],
+)
+<span class="cm"># drop it into a larger flow alongside your own LlmAgents</span>`
+    },
+    managed: {
+      title: "agent_client.py — Managed Agents API direct",
+      dot: "var(--amber)",
+      note: "No ADK process at all. The Agents API (control plane) registers the agent and mounts its config; the Interactions API (data plane) runs it. This is the pattern behind the free_api_agent.py demo in ricardo7k/skill-agy.",
+      html:
+`<span class="cm"># control plane — create once</span>
+agent = client.agents.<span class="fn">create</span>(
+    display_name=<span class="str">"free-api-analyst"</span>,
+    system_instruction=<span class="str">"Answer using public REST APIs."</span>,
+    tools=[<span class="str">"code_execution"</span>],
+    skills=[<span class="str">"gs://BUCKET/free-api/SKILL.md"</span>],
+)
+
+<span class="cm"># data plane — run it, poll or stream</span>
+interaction = client.interactions.<span class="fn">create</span>(
+    agent=agent.name,
+    input=<span class="str">"What's the weather in Bengaluru?"</span>,
+    stream=<span class="kw">True</span>,
+)`
+    }
+  };
+
+  function applyMode(m){
+    mode = m;
+    document.querySelectorAll('#segctrl button').forEach(b=>b.classList.toggle('active', b.dataset.mode===m));
+
+    // meter
+    document.getElementById('meterdot').style.left = meterPos[m] + '%';
+    document.getElementById('meterdesc').innerHTML = meterDesc[m];
+
+    // analogy
+    const a = analogy[m];
+    const icon = document.getElementById('analogyicon');
+    icon.textContent = a.icon;
+    icon.style.background = a.iconBg;
+    document.getElementById('analogytitle').textContent = a.title;
+    document.getElementById('analogytext').textContent = a.text;
+
+    // diagram lanes
+    const you = document.getElementById('lane-you');
+    const google = document.getElementById('lane-google');
+    const bridge = document.getElementById('bridgerow');
+    you.classList.remove('dim'); google.classList.remove('dim'); bridge.classList.remove('show');
+    if(m === 'adk'){ google.classList.add('dim'); }
+    if(m === 'managed'){ you.classList.add('dim'); }
+    if(m === 'hybrid'){ bridge.classList.add('show'); }
+
+    // table
+    document.querySelectorAll('table.cmp td.col').forEach(td=>{
+      td.classList.remove('active-adk','active-hybrid','active-managed');
+    });
+    document.querySelectorAll('table.cmp td.c-' + m).forEach(td=>{
+      td.classList.add('active-' + m);
+    });
+
+    // code
+    const c = codeSnippets[m];
+    document.getElementById('code-heading').textContent =
+      m === 'adk' ? 'Building it with ADK' :
+      m === 'hybrid' ? 'ADK orchestrating a Managed Agent' :
+      'Calling the Managed Agents API directly';
+    document.getElementById('codetabtitle').textContent = c.title;
+    document.getElementById('codedot').style.background = c.dot;
+    document.getElementById('codebody').innerHTML = c.html;
+    document.getElementById('codenote').textContent = c.note;
+  }
+
+  document.querySelectorAll('#segctrl button').forEach(btn=>{
+    btn.addEventListener('click', ()=> applyMode(btn.dataset.mode));
+  });
+  applyMode('adk');
+
+  // ---- quiz ----
+  const quiz = document.getElementById('quiz');
+  const steps = quiz.querySelectorAll('.q-step');
+  const answers = {};
+  function goStep(name){
+    steps.forEach(s => s.classList.toggle('active', s.dataset.step === name));
+  }
+  quiz.querySelectorAll('.q-opts button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(btn.dataset.yes !== undefined) answers.tools = btn.dataset.yes === 'true';
+      if(btn.dataset.nocode !== undefined) answers.nocode = btn.dataset.nocode === 'true';
+      if(btn.dataset.pipeline !== undefined) answers.pipeline = btn.dataset.pipeline === 'true';
+      if(btn.dataset.go === 'result'){
+        let rec = 'adk', text = '';
+        if(answers.tools){
+          rec = 'adk';
+          text = "You need custom function tools or MCP — that rules out ManagedAgent entirely (it raises NotImplementedError for both). Build it in ADK.";
+        } else if(answers.nocode){
+          rec = 'managed';
+          text = "No custom tools needed, and you'd rather not write or host an agent process at all — call the Managed Agents API directly and configure it instead of coding it. Just remember: Pre-GA, no sensitive data yet.";
+        } else if(answers.pipeline){
+          rec = 'hybrid';
+          text = "This is one heavy-lifting step inside a bigger ADK flow — wrap it as a ManagedAgent so you get the server-hosted sandbox without giving up orchestration of the rest of your pipeline.";
+        } else {
+          rec = 'adk';
+          text = "No custom tools required, but you're already comfortable writing agent code and this isn't part of a larger pipeline — plain ADK keeps things simplest to run and debug locally.";
+        }
+        document.getElementById('resultbadge').className = 'badge ' + rec;
+        document.getElementById('resultbadge').textContent =
+          rec === 'adk' ? 'Build with ADK' : rec === 'hybrid' ? 'ADK + ManagedAgent' : 'Managed Agents API';
+        document.getElementById('resulttext').textContent = text;
+      }
+      goStep(btn.dataset.go);
+    });
+  });
+  document.getElementById('restartquiz').addEventListener('click', ()=>{
+    for(const k in answers) delete answers[k];
+    goStep('0');
+  });
+</script>
+
+</body>
+</html>
