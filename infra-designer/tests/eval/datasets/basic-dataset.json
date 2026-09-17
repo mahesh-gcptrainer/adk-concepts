@@ -1,0 +1,26 @@
+{
+  "eval_cases": [
+    {
+      "eval_case_id": "ecommerce_pdf_pipeline",
+      "prompt": {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Analyze the cloud architecture requirements in samples/ecommerce_requirements.pdf and design the full GCP architecture, network topology, security hardening, and complete Terraform manifests."
+          }
+        ]
+      }
+    },
+    {
+      "eval_case_id": "realtime_analytics_spec",
+      "prompt": {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Design an enterprise cloud architecture on GCP for a real-time analytics platform using Pub/Sub, BigQuery, and Cloud Storage with custom VPC, CMEK encryption, least privilege IAM, and complete Terraform manifests."
+          }
+        ]
+      }
+    }
+  ]
+}
