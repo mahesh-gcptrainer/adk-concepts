@@ -1,0 +1,11 @@
+# Rename this file to terraform.tfvars and fill in your values.
+
+project_id = "your-gcp-project-id" # REQUIRED: Replace with your actual GCP Project ID
+region     = "us-central1"
+environment = "prod"
+
+# Example: Overriding default variable values if needed
+# vpc_name = "agfs-production-vpc"
+# gke_node_count = 5
+# db_tier = "db-custom-8-32768" # Larger DB tier for production
+# trusted_management_cidrs = ["203.0.113.0/24", "198.51.100.0/24"] # Your corporate IP ranges
